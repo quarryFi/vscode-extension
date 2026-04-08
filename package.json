@@ -2,7 +2,7 @@
   "name": "quarryfi-tracker",
   "displayName": "QuarryFi R&D Tracker",
   "description": "Track active coding time for R&D tax credit documentation. Sends heartbeats to the QuarryFi API.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "quarryfi",
   "license": "MIT",
   "engines": {
@@ -29,22 +29,62 @@
       {
         "command": "quarryfi.toggleTracking",
         "title": "QuarryFi: Toggle Tracking"
+      },
+      {
+        "command": "quarryfi.configureProfiles",
+        "title": "QuarryFi: Configure Profiles"
       }
     ],
     "configuration": {
       "title": "QuarryFi",
       "properties": {
+        "quarryfi.profiles": {
+          "type": "array",
+          "default": [],
+          "description": "API profiles for multi-company tracking. Each profile routes heartbeats from specific workspace folders to a distinct API key.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Display name for this profile (e.g., company name)."
+              },
+              "apiKey": {
+                "type": "string",
+                "description": "QuarryFi API key for this profile (starts with qf_)."
+              },
+              "apiUrl": {
+                "type": "string",
+                "description": "QuarryFi API endpoint URL for this profile.",
+                "default": "https://quarryfi.smashedstudiosllc.workers.dev"
+              },
+              "workspaceFolders": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [],
+                "description": "Absolute folder paths to match. Empty array matches all files (catch-all)."
+              }
+            },
+            "required": [
+              "name",
+              "apiKey"
+            ]
+          },
+          "order": 0
+        },
         "quarryfi.apiKey": {
           "type": "string",
           "default": "",
-          "description": "Your QuarryFi API key (starts with qf_).",
-          "order": 1
+          "description": "Legacy: single API key (starts with qf_). Use quarryfi.profiles instead.",
+          "order": 10
         },
         "quarryfi.apiUrl": {
           "type": "string",
           "default": "https://quarryfi.smashedstudiosllc.workers.dev",
-          "description": "QuarryFi API endpoint URL.",
-          "order": 2
+          "description": "Legacy: single API endpoint URL. Use quarryfi.profiles instead.",
+          "order": 11
         }
       }
     }

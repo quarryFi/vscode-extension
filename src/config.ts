@@ -1,17 +1,69 @@
 import * as vscode from 'vscode';
 
 const SECTION = 'quarryfi';
+const DEFAULT_API_URL = 'https://quarryfi.smashedstudiosllc.workers.dev';
 
+export interface Profile {
+  name: string;
+  apiKey: string;
+  apiUrl: string;
+  workspaceFolders: string[];
+}
+
+export function profileId(profile: Profile): string {
+  return profile.name;
+}
+
+export function getProfiles(): Profile[] {
+  const config = vscode.workspace.getConfiguration(SECTION);
+  const profiles = config.get<Profile[]>('profiles', []);
+
+  if (profiles.length > 0) {
+    return profiles.map((p) => ({
+      ...p,
+      apiUrl: (p.apiUrl || DEFAULT_API_URL).replace(/\/+$/, ''),
+      workspaceFolders: p.workspaceFolders ?? [],
+    }));
+  }
+
+  // Legacy fallback: single apiKey/apiUrl treated as catch-all
+  const apiKey = config.get<string>('apiKey', '');
+  if (apiKey) {
+    return [
+      {
+        name: 'Default',
+        apiKey,
+        apiUrl: config.get<string>('apiUrl', DEFAULT_API_URL)!.replace(/\/+$/, ''),
+        workspaceFolders: [],
+      },
+    ];
+  }
+
+  return [];
+}
+
+export function resolveProfiles(filePath: string): Profile[] {
+  const normalized = filePath.replace(/\\/g, '/');
+  return getProfiles().filter((profile) => {
+    if (profile.workspaceFolders.length === 0) {
+      return true; // catch-all
+    }
+    return profile.workspaceFolders.some((folder) => {
+      const normalizedFolder = folder.replace(/\\/g, '/').replace(/\/+$/, '');
+      return normalized.startsWith(normalizedFolder + '/') || normalized === normalizedFolder;
+    });
+  });
+}
+
+// Legacy compat — reads from first profile or direct settings
 export function getApiKey(): string {
-  return vscode.workspace.getConfiguration(SECTION).get<string>('apiKey', '');
+  const profiles = getProfiles();
+  return profiles[0]?.apiKey ?? '';
 }
 
 export function getApiUrl(): string {
-  const url = vscode.workspace.getConfiguration(SECTION).get<string>(
-    'apiUrl',
-    'https://quarryfi.smashedstudiosllc.workers.dev'
-  );
-  return url.replace(/\/+$/, '');
+  const profiles = getProfiles();
+  return profiles[0]?.apiUrl ?? DEFAULT_API_URL;
 }
 
 export async function promptForApiKey(): Promise<string | undefined> {
@@ -35,4 +87,11 @@ export async function promptForApiKey(): Promise<string | undefined> {
   }
 
   return key;
+}
+
+export async function addProfile(profile: Profile): Promise<void> {
+  const config = vscode.workspace.getConfiguration(SECTION);
+  const existing = config.get<Profile[]>('profiles', []);
+  existing.push(profile);
+  await config.update('profiles', existing, vscode.ConfigurationTarget.Global);
 }
