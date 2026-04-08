@@ -1,0 +1,64 @@
+{
+  "name": "quarryfi-tracker",
+  "displayName": "QuarryFi R&D Tracker",
+  "description": "Track active coding time for R&D tax credit documentation. Sends heartbeats to the QuarryFi API.",
+  "version": "0.1.0",
+  "publisher": "quarryfi",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smashedstudiosllc/vscode-extension"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "quarryfi.setApiKey",
+        "title": "QuarryFi: Set API Key"
+      },
+      {
+        "command": "quarryfi.toggleTracking",
+        "title": "QuarryFi: Toggle Tracking"
+      }
+    ],
+    "configuration": {
+      "title": "QuarryFi",
+      "properties": {
+        "quarryfi.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your QuarryFi API key (starts with qf_).",
+          "order": 1
+        },
+        "quarryfi.apiUrl": {
+          "type": "string",
+          "default": "https://quarryfi.smashedstudiosllc.workers.dev",
+          "description": "QuarryFi API endpoint URL.",
+          "order": 2
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "watch": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.80.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  }
+}

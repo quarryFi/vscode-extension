@@ -1,28 +1,72 @@
-# quarryFi VS Code Extension
+# QuarryFi R&D Tracker
 
-quarryFi time tracking extension for VS Code, Cursor, and Windsurf. Tracks R&D activity for automated tax credit documentation.
+VS Code extension that tracks active coding time and sends heartbeats to the QuarryFi API for automated R&D tax credit documentation. Also works in **Cursor** and **Windsurf**.
 
-## Install
+## What it does
 
-Search for **quarryFi** in the VS Code extension marketplace, or install from the command line:
+- Tracks active editing time (typing, switching files, saving)
+- Sends heartbeats every 30 seconds during active coding
+- Detects project name, language, file type, and git branch
+- Batches heartbeats and posts them to the QuarryFi API
+- Status bar shows tracking state with click-to-toggle
+
+## Install from VSIX
+
+1. Download the `.vsix` file from the [releases page](https://github.com/smashedstudiosllc/vscode-extension/releases)
+2. In VS Code: **Extensions** sidebar > **...** menu > **Install from VSIX...**
+3. Select the downloaded file
+
+Or from the command line:
 
 ```bash
-code --install-extension quarryfi.quarryfi-tracker
+code --install-extension quarryfi-tracker-0.1.0.vsix
 ```
 
-## Configuration
+Marketplace publishing is coming soon.
 
-Open VS Code settings and set:
+## Setup
 
-- `quarryfi.apiKey` — Your QuarryFi API key (get one from your [dashboard](https://quarryfi.smashedstudiosllc.workers.dev/dashboard))
-- `quarryfi.apiUrl` — API endpoint (default: `https://quarryfi.smashedstudiosllc.workers.dev`)
+1. Sign in to your [QuarryFi dashboard](https://quarryfi.smashedstudiosllc.workers.dev/dashboard)
+2. Generate an API key (starts with `qf_`)
+3. In VS Code, run **QuarryFi: Set API Key** from the command palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) and paste your key
 
-## What it tracks
+Or set it directly in settings:
 
-- Active editing time per file
-- Project and workspace context
-- Language and file types
-- Branch information
-- Idle detection (pauses tracking after 5 minutes of inactivity)
+```json
+{
+  "quarryfi.apiKey": "qf_your_key_here",
+  "quarryfi.apiUrl": "https://quarryfi.smashedstudiosllc.workers.dev"
+}
+```
 
-All data is sent to your QuarryFi account for R&D tax credit qualification analysis.
+## Commands
+
+| Command | Description |
+|---|---|
+| `QuarryFi: Set API Key` | Prompt to enter your API key |
+| `QuarryFi: Toggle Tracking` | Pause or resume tracking |
+
+## Privacy
+
+This extension **only sends metadata** to the QuarryFi API:
+
+- Project name (workspace folder name)
+- Programming language
+- File extension
+- Git branch name
+- Timestamps and duration
+
+**It never sends file contents, file paths, or source code.**
+
+## Development
+
+```bash
+npm install
+npm run watch    # development with auto-rebuild
+npm run build    # production build
+npm run package  # create .vsix file
+```
+
+## License
+
+MIT
