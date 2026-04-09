@@ -7,10 +7,11 @@ export interface Heartbeat {
   project_name: string;
   language: string;
   file_type: string;
-  branch: string | null;
+  branch: string;
   editor: string;
   timestamp: string;
   duration_seconds: number;
+  session_id: string;
 }
 
 interface ProfileBatch {

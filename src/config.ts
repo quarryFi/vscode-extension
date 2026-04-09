@@ -42,7 +42,12 @@ export function getProfiles(): Profile[] {
   return [];
 }
 
-export function resolveProfiles(filePath: string): Profile[] {
+export function resolveProfiles(filePath: string | null): Profile[] {
+  // No file open — only catch-all profiles apply
+  if (!filePath) {
+    return getProfiles().filter((p) => p.workspaceFolders.length === 0);
+  }
+
   const normalized = filePath.replace(/\\/g, '/');
   return getProfiles().filter((profile) => {
     if (profile.workspaceFolders.length === 0) {

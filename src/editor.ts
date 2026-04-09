@@ -1,8 +1,14 @@
 import * as vscode from 'vscode';
 
-export type EditorName = 'vscode' | 'cursor' | 'windsurf';
+export type EditorId = 'vscode' | 'cursor' | 'windsurf';
 
-export function detectEditor(): EditorName {
+const DISPLAY_NAMES: Record<EditorId, string> = {
+  vscode: 'VS Code',
+  cursor: 'Cursor',
+  windsurf: 'Windsurf',
+};
+
+export function detectEditorId(): EditorId {
   const appName = vscode.env.appName.toLowerCase();
 
   if (appName.includes('cursor')) {
@@ -12,4 +18,8 @@ export function detectEditor(): EditorName {
     return 'windsurf';
   }
   return 'vscode';
+}
+
+export function detectEditorDisplayName(): string {
+  return DISPLAY_NAMES[detectEditorId()];
 }
