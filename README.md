@@ -10,7 +10,7 @@ Install **QuarryFi R&D Tracker** from the VS Code Marketplace, or run:
 code --install-extension quarryfi.quarryfi-tracker
 ```
 
-For a private pilot or a compatible VS Code-based editor, download the signed `.vsix` from the [GitHub releases page](https://github.com/quarryFi/vscode-extension/releases) and choose **Extensions → … → Install from VSIX…**.
+For a compatible VS Code-based editor, use the Marketplace page's **Download Extension** action, then choose **Extensions → … → Install from VSIX…**.
 
 ## Set up tracking
 

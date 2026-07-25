@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Correct the alternate VSIX installation guidance to point to the Marketplace-distributed package.
+
 ## 0.3.0
 
 - Enable first-class VS Code heartbeat tracking against the current QuarryFi API.
