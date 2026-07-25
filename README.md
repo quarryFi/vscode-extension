@@ -14,12 +14,12 @@ For a compatible VS Code-based editor, use the Marketplace page's **Download Ext
 
 ## Set up tracking
 
-1. In the [QuarryFi Team dashboard](https://quarryfi.com/dashboard/team), create or copy the API key assigned to your team member.
-2. In VS Code, open the Command Palette and run **QuarryFi: Configure Tracking**.
-3. Add a profile, paste the key, and select the workspace folders that belong to that QuarryFi account.
+1. If Claude Code or Codex is already configured on this machine, accept **Review & import** after installation or run **QuarryFi: Import Existing Claude Code / Codex Profile**. Review the profile and workspace scope before importing it into encrypted VS Code storage.
+2. Otherwise, create a seat-assigned key on the [QuarryFi Team dashboard](https://quarryfi.com/dashboard/team). A key is shown only once, so copy it when it is created.
+3. In VS Code, run **QuarryFi: Configure Tracking**, add a profile, paste the key, and select the workspace folders that belong to that QuarryFi account.
 4. Start working. The status bar shows the matched profile and delivery state.
 
-QuarryFi verifies the key against the seat-scoped status endpoint before saving it. API keys are encrypted with VS Code `SecretStorage` and are never written to `settings.json`.
+Claude Code and Codex keep their shared profile configuration in `~/.quarryfi/config.json`. Import is always user-confirmed, never displays or logs the full key, and copies selected keys into VS Code `SecretStorage`. Manually entered keys are verified against the seat-scoped status endpoint before saving. API keys are never written to VS Code `settings.json`.
 
 ### Multiple companies
 
@@ -47,6 +47,7 @@ Tracking is limited to trusted local or remote filesystem workspaces. If the act
 | Command | Purpose |
 |---|---|
 | **QuarryFi: Configure Tracking** | Add, edit, or remove encrypted profiles |
+| **QuarryFi: Import Existing Claude Code / Codex Profile** | Review and securely import profiles from `~/.quarryfi/config.json` |
 | **QuarryFi: Show Tracking Status** | See the active profile, queue, and delivery health |
 | **QuarryFi: Pause or Resume Tracking** | Persistently pause or resume collection |
 | **QuarryFi: Clear Local Audit Log** | Delete the extension's local delivery log |

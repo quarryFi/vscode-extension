@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { API_KEY_PATTERN, EXTENSION_SOURCE } from "../constants";
 import { pathMatchesFolder, resolveMatchingProfiles } from "../profileMatching";
+import { maskApiKey, parseSharedConfig } from "../sharedConfig";
 import type { Profile } from "../types";
 
 const profiles: Profile[] = [
@@ -50,4 +51,36 @@ test("matching returns the folder profile and explicit catch-all", () => {
     resolveMatchingProfiles(profiles, "/Users/dev/acme/src/app.ts", "darwin").map((profile) => profile.id),
     ["acme", "all"]
   );
+});
+
+test("shared config imports valid profiles without exposing keys in labels", () => {
+  const apiKey = "qf_" + "c".repeat(40);
+  const imported = parseSharedConfig(JSON.stringify({
+    profiles: [
+      { name: "Acme", api_key: apiKey, projects: ["/Users/dev/acme", "/Users/dev/acme"] },
+      { name: "Invalid", api_key: "qf_short", projects: [] },
+    ],
+  }));
+
+  assert.deepEqual(imported, [{
+    name: "Acme",
+    apiKey,
+    workspaceFolders: ["/Users/dev/acme"],
+    matchAll: false,
+  }]);
+  assert.equal(maskApiKey(apiKey), "qf_...cccc");
+});
+
+test("legacy shared config imports as an explicit catch-all", () => {
+  const apiKey = "qf_" + "d".repeat(40);
+  assert.deepEqual(parseSharedConfig(JSON.stringify({ api_key: apiKey })), [{
+    name: "Imported QuarryFi profile",
+    apiKey,
+    workspaceFolders: [],
+    matchAll: true,
+  }]);
+});
+
+test("malformed shared config imports nothing", () => {
+  assert.deepEqual(parseSharedConfig("not-json"), []);
 });

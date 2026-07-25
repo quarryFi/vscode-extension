@@ -4,7 +4,8 @@ import { AuditLog } from "./auditLog";
 import { ProfileStore } from "./config";
 import { runtimeChannel } from "./editor";
 import { HeartbeatClient } from "./heartbeat";
-import { manageProfiles } from "./profileWizard";
+import { importSharedProfiles, manageProfiles } from "./profileWizard";
+import { readSharedConfigProfiles } from "./sharedConfig";
 import { StatusBar } from "./statusBar";
 import { Tracker } from "./tracker";
 import type { ClientMetadata } from "./types";
@@ -38,6 +39,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     tracker,
     vscode.commands.registerCommand("quarryfi.configure", async () => {
       await manageProfiles(profiles);
+      await tracker.updateStatus();
+    }),
+    vscode.commands.registerCommand("quarryfi.importSharedConfig", async () => {
+      await importSharedProfiles(profiles);
       await tracker.updateStatus();
     }),
     vscode.commands.registerCommand("quarryfi.showStatus", () => showStatus()),
@@ -76,12 +81,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   if ((await profiles.getProfiles()).length === 0 && !profiles.hasShownOnboarding()) {
     await profiles.markOnboardingShown();
+    const sharedProfiles = await readSharedConfigProfiles();
+    const hasSharedProfiles = sharedProfiles.length > 0;
     void vscode.window.showInformationMessage(
-      "QuarryFi is installed but not tracking yet. Add a seat-assigned API key and choose the workspaces you want to track.",
-      "Configure",
+      hasSharedProfiles
+        ? `QuarryFi found ${sharedProfiles.length} existing Claude Code / Codex profile${sharedProfiles.length === 1 ? "" : "s"} on this machine. Import into encrypted VS Code storage?`
+        : "QuarryFi is installed but not tracking yet. Add a seat-assigned API key and choose the workspaces you want to track.",
+      hasSharedProfiles ? "Review & import" : "Configure",
+      ...(hasSharedProfiles ? ["Configure manually"] : []),
       "Open dashboard"
     ).then(async (action) => {
-      if (action === "Configure") {
+      if (action === "Review & import") {
+        await vscode.commands.executeCommand("quarryfi.importSharedConfig");
+      } else if (action === "Configure" || action === "Configure manually") {
         await vscode.commands.executeCommand("quarryfi.configure");
       } else if (action === "Open dashboard") {
         await vscode.env.openExternal(vscode.Uri.parse("https://quarryfi.com/dashboard/team"));

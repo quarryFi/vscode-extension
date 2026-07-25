@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2
+
+- Detect existing Claude Code and Codex profiles in `~/.quarryfi/config.json`.
+- Let users review profile names, masked keys, and workspace scopes before importing.
+- Copy selected keys into encrypted VS Code SecretStorage without displaying or logging plaintext.
+- Keep manual setup available for new, remote, or separately configured environments.
+
 ## 0.3.1
 
 - Correct the alternate VSIX installation guidance to point to the Marketplace-distributed package.

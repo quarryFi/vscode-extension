@@ -2,6 +2,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { API_BASE_URL, API_KEY_PATTERN, DASHBOARD_URL, REQUEST_TIMEOUT_MS } from "./constants";
 import type { ProfileInput, ProfileStore } from "./config";
+import { maskApiKey, readSharedConfigProfiles } from "./sharedConfig";
 import type { Profile } from "./types";
 
 interface FolderPick extends vscode.QuickPickItem {
@@ -14,6 +15,7 @@ export async function manageProfiles(store: ProfileStore): Promise<void> {
   const action = await vscode.window.showQuickPick(
     [
       { label: "$(add) Add profile", action: "add" },
+      { label: "$(key) Import existing Claude Code / Codex profile", action: "import" },
       ...(profiles.length > 0
         ? [
             { label: "$(edit) Edit profile", action: "edit" },
@@ -32,6 +34,10 @@ export async function manageProfiles(store: ProfileStore): Promise<void> {
   if (!action) return;
   if (action.action === "dashboard") {
     await vscode.env.openExternal(vscode.Uri.parse(DASHBOARD_URL));
+    return;
+  }
+  if (action.action === "import") {
+    await importSharedProfiles(store);
     return;
   }
   if (action.action === "add") {
@@ -61,6 +67,44 @@ export async function manageProfiles(store: ProfileStore): Promise<void> {
     await store.remove(selected.id);
     vscode.window.showInformationMessage(`QuarryFi profile "${selected.name}" was removed.`);
   }
+}
+
+export async function importSharedProfiles(store: ProfileStore): Promise<number> {
+  const existingKeys = new Set((await store.getProfiles()).map((profile) => profile.apiKey));
+  const candidates = (await readSharedConfigProfiles()).filter((profile) => !existingKeys.has(profile.apiKey));
+  if (candidates.length === 0) {
+    vscode.window.showInformationMessage(
+      "No new QuarryFi profiles were found in ~/.quarryfi/config.json. You can still add one manually."
+    );
+    return 0;
+  }
+
+  const selected = await vscode.window.showQuickPick(
+    candidates.map((profile) => ({
+      label: profile.name,
+      description: `${maskApiKey(profile.apiKey)} · ${profile.matchAll ? "all workspaces" : `${profile.workspaceFolders.length} project folder${profile.workspaceFolders.length === 1 ? "" : "s"}`}`,
+      detail: profile.matchAll
+        ? "Imports an explicit catch-all profile"
+        : profile.workspaceFolders.join(", "),
+      picked: true,
+      profile,
+    })),
+    {
+      title: "Import existing QuarryFi profiles",
+      placeHolder: "Selected keys will be copied into encrypted VS Code storage",
+      canPickMany: true,
+      ignoreFocusOut: true,
+    }
+  );
+  if (!selected || selected.length === 0) return 0;
+
+  for (const item of selected) {
+    await store.add(item.profile);
+  }
+  vscode.window.showInformationMessage(
+    `Imported ${selected.length} QuarryFi profile${selected.length === 1 ? "" : "s"} into encrypted VS Code storage.`
+  );
+  return selected.length;
 }
 
 export async function verifyApiKey(apiKey: string): Promise<{ ok: boolean; retryable: boolean; message: string }> {
