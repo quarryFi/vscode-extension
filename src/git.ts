@@ -1,4 +1,5 @@
-import * as vscode from 'vscode';
+import * as path from "node:path";
+import * as vscode from "vscode";
 
 interface GitExtension {
   getAPI(version: number): GitAPI;
@@ -13,30 +14,24 @@ interface GitRepository {
   rootUri: vscode.Uri;
 }
 
-export function getBranch(): string | undefined {
+export async function getBranch(documentUri?: vscode.Uri): Promise<string> {
   try {
-    const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git');
-    if (!gitExtension?.isActive) {
-      return undefined;
-    }
+    const extension = vscode.extensions.getExtension<GitExtension>("vscode.git");
+    if (!extension) return "unknown";
+    const exports = extension.isActive ? extension.exports : await extension.activate();
+    const repositories = exports.getAPI(1).repositories;
+    if (repositories.length === 0) return "unknown";
 
-    const api = gitExtension.exports.getAPI(1);
-    if (api.repositories.length === 0) {
-      return undefined;
-    }
-
-    const activeEditor = vscode.window.activeTextEditor;
-    if (activeEditor) {
-      const repo = api.repositories.find((r) =>
-        activeEditor.document.uri.fsPath.startsWith(r.rootUri.fsPath)
-      );
-      if (repo) {
-        return repo.state.HEAD?.name;
-      }
-    }
-
-    return api.repositories[0].state.HEAD?.name;
+    const repository = documentUri
+      ? repositories.find((candidate) => isInside(documentUri.fsPath, candidate.rootUri.fsPath))
+      : repositories[0];
+    return repository?.state.HEAD?.name?.slice(0, 200) || "unknown";
   } catch {
-    return undefined;
+    return "unknown";
   }
+}
+
+function isInside(candidatePath: string, rootPath: string): boolean {
+  const relative = path.relative(rootPath, candidatePath);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }

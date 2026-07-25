@@ -1,51 +1,63 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
+import type { DeliveryState } from "./heartbeat";
 
-export class StatusBar {
-  private item: vscode.StatusBarItem;
-  private _tracking = true;
-  private _activeProfileName: string | null = null;
+export class StatusBar implements vscode.Disposable {
+  private readonly item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  private tracking = true;
+  private profileNames: string[] = [];
+  private delivery: DeliveryState = "idle";
 
   constructor() {
-    this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    this.item.command = 'quarryfi.toggleTracking';
-    this.update();
+    this.item.name = "QuarryFi R&D Tracker";
+    this.item.command = "quarryfi.showStatus";
+    this.render();
     this.item.show();
   }
 
-  get isTracking(): boolean {
-    return this._tracking;
+  setTracking(enabled: boolean): void {
+    this.tracking = enabled;
+    this.render();
   }
 
-  toggle(): void {
-    this._tracking = !this._tracking;
-    this.update();
+  setProfiles(names: string[]): void {
+    this.profileNames = names;
+    this.render();
   }
 
-  setActiveProfile(name: string | null): void {
-    this._activeProfileName = name;
-    this.update();
-  }
-
-  private update(): void {
-    if (!this._tracking) {
-      this.item.text = '$(debug-pause) quarryFi: paused';
-      this.item.color = new vscode.ThemeColor('disabledForeground');
-      this.item.tooltip = 'QuarryFi tracking is paused. Click to resume.';
-      return;
-    }
-
-    if (this._activeProfileName) {
-      this.item.text = `$(pulse) quarryFi: ${this._activeProfileName}`;
-      this.item.color = new vscode.ThemeColor('testing.iconPassed');
-      this.item.tooltip = `Tracking for ${this._activeProfileName}. Click to pause.`;
-    } else {
-      this.item.text = '$(pulse) quarryFi: no match';
-      this.item.color = new vscode.ThemeColor('editorWarning.foreground');
-      this.item.tooltip = 'No matching profile for current file. Click to pause.';
-    }
+  setDelivery(state: DeliveryState): void {
+    this.delivery = state;
+    this.render();
   }
 
   dispose(): void {
     this.item.dispose();
+  }
+
+  private render(): void {
+    if (!this.tracking) {
+      this.item.text = "$(debug-pause) QuarryFi: paused";
+      this.item.color = new vscode.ThemeColor("disabledForeground");
+      this.item.tooltip = "QuarryFi tracking is paused. Click for status and controls.";
+      return;
+    }
+
+    if (this.profileNames.length === 0) {
+      this.item.text = "$(pulse) QuarryFi: no match";
+      this.item.color = new vscode.ThemeColor("editorWarning.foreground");
+      this.item.tooltip = "No QuarryFi profile matches the active file. Nothing is being sent.";
+      return;
+    }
+
+    const label = this.profileNames.length === 1
+      ? this.profileNames[0]
+      : `${this.profileNames.length} profiles`;
+    const icon = this.delivery === "error" ? "warning" : this.delivery === "sending" ? "sync~spin" : "pulse";
+    this.item.text = `$(${icon}) QuarryFi: ${label}`;
+    this.item.color = this.delivery === "error"
+      ? new vscode.ThemeColor("editorWarning.foreground")
+      : new vscode.ThemeColor("testing.iconPassed");
+    this.item.tooltip = this.delivery === "error"
+      ? "QuarryFi could not deliver the latest heartbeat. Click for diagnostics."
+      : `Tracking metadata for ${this.profileNames.join(", ")}. Click for status and controls.`;
   }
 }

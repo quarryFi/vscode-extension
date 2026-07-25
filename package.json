@@ -1,20 +1,49 @@
 {
   "name": "quarryfi-tracker",
   "displayName": "QuarryFi R&D Tracker",
-  "description": "Track active coding time for R&D tax credit documentation. Sends heartbeats to the QuarryFi API.",
-  "version": "0.2.0",
+  "description": "Capture active VS Code development time as metadata-only R&D evidence in QuarryFi.",
+  "version": "0.3.0",
   "publisher": "quarryfi",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.96.0"
   },
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "R&D",
+    "tax credit",
+    "time tracking",
+    "engineering",
+    "compliance"
+  ],
   "icon": "images/icon.png",
+  "pricing": "Free",
+  "galleryBanner": {
+    "color": "#FAFAF8",
+    "theme": "light"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/smashedstudiosllc/vscode-extension"
+    "url": "https://github.com/quarryFi/vscode-extension.git"
+  },
+  "homepage": "https://quarryfi.com",
+  "bugs": {
+    "url": "https://github.com/quarryFi/vscode-extension/issues"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "QuarryFi only tracks workspaces you trust and explicitly assign to a profile."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Local or remote filesystem workspaces are required for project and Git metadata."
+    }
   },
   "activationEvents": [
     "onStartupFinished"
@@ -23,16 +52,20 @@
   "contributes": {
     "commands": [
       {
-        "command": "quarryfi.setApiKey",
-        "title": "QuarryFi: Set API Key"
+        "command": "quarryfi.configure",
+        "title": "QuarryFi: Configure Tracking"
+      },
+      {
+        "command": "quarryfi.showStatus",
+        "title": "QuarryFi: Show Tracking Status"
       },
       {
         "command": "quarryfi.toggleTracking",
-        "title": "QuarryFi: Toggle Tracking"
+        "title": "QuarryFi: Pause or Resume Tracking"
       },
       {
-        "command": "quarryfi.configureProfiles",
-        "title": "QuarryFi: Configure Profiles"
+        "command": "quarryfi.clearAuditLog",
+        "title": "QuarryFi: Clear Local Audit Log"
       }
     ],
     "configuration": {
@@ -41,64 +74,47 @@
         "quarryfi.profiles": {
           "type": "array",
           "default": [],
-          "description": "API profiles for multi-company tracking. Each profile routes heartbeats from specific workspace folders to a distinct API key.",
+          "deprecationMessage": "Use QuarryFi: Configure Tracking. Existing values are migrated to encrypted SecretStorage and removed.",
+          "description": "Deprecated 0.2.x profile storage. Do not add API keys here.",
           "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "description": "Display name for this profile (e.g., company name)."
-              },
-              "apiKey": {
-                "type": "string",
-                "description": "QuarryFi API key for this profile (starts with qf_)."
-              },
-              "apiUrl": {
-                "type": "string",
-                "description": "QuarryFi API endpoint URL for this profile.",
-                "default": "https://quarryfi.smashedstudiosllc.workers.dev"
-              },
-              "workspaceFolders": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "default": [],
-                "description": "Absolute folder paths to match. Empty array matches all files (catch-all)."
-              }
-            },
-            "required": [
-              "name",
-              "apiKey"
-            ]
-          },
-          "order": 0
+            "type": "object"
+          }
         },
         "quarryfi.apiKey": {
           "type": "string",
           "default": "",
-          "description": "Legacy: single API key (starts with qf_). Use quarryfi.profiles instead.",
-          "order": 10
+          "deprecationMessage": "Use QuarryFi: Configure Tracking. Existing values are migrated to encrypted SecretStorage and removed.",
+          "description": "Deprecated 0.2.x key storage. Do not add API keys here."
         },
         "quarryfi.apiUrl": {
           "type": "string",
-          "default": "https://quarryfi.smashedstudiosllc.workers.dev",
-          "description": "Legacy: single API endpoint URL. Use quarryfi.profiles instead.",
-          "order": 11
+          "default": "",
+          "deprecationMessage": "Custom endpoints are no longer supported in released builds.",
+          "description": "Deprecated 0.2.x endpoint setting."
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run build",
-    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
-    "watch": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch",
-    "package": "vsce package"
+    "vscode:prepublish": "npm run check && npm run build",
+    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20 --minify",
+    "watch": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20 --watch",
+    "typecheck": "tsc --noEmit",
+    "test:unit:build": "esbuild ./src/test/profileMatching.test.ts --bundle --outfile=dist-test/profileMatching.test.js --format=cjs --platform=node --target=node20",
+    "test:unit": "npm run test:unit:build && node --test dist-test/profileMatching.test.js",
+    "test:integration:build": "esbuild ./src/test/runIntegration.ts --bundle --outfile=dist-test/runIntegration.js --external:vscode --format=cjs --platform=node --target=node20",
+    "test:integration": "npm run test:integration:build && node scripts/run-integration.mjs",
+    "test": "npm run test:unit",
+    "check": "npm run typecheck && npm run test",
+    "package": "vsce package",
+    "publish:marketplace": "vsce publish"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "@types/vscode": "^1.80.0",
-    "esbuild": "^0.20.0",
-    "typescript": "^5.3.0"
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.96.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.9.0"
   }
 }
