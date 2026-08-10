@@ -36,9 +36,10 @@ During active editing, the extension sends a heartbeat about every 30 seconds co
 - Git branch
 - Editor name
 - Timestamp, active duration, and a random session ID
+- Current Git commit SHA, a one-way hash of the GitHub `owner/repository` name, a changed-file count, and a coarse activity category used for evidence reconciliation
 - Extension version and runtime diagnostics
 
-It does **not** send source code, file contents, full file paths, keystrokes, Git diffs, commit messages, terminal contents, or environment variables.
+It does **not** send source code, file contents, full file paths, raw repository URLs, keystrokes, Git diffs, commit messages, prompts, terminal contents, or environment variables.
 
 Tracking is limited to trusted local or remote filesystem workspaces. If the active file does not match a profile, the extension sends nothing.
 

@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { EXTENSION_SOURCE, HEARTBEAT_INTERVAL_MS, SESSION_GAP_MS } from "./constants";
 import type { ProfileStore } from "./config";
 import { detectEditorDisplayName } from "./editor";
-import { getBranch } from "./git";
+import { getGitContext } from "./git";
 import type { HeartbeatClient } from "./heartbeat";
 import type { StatusBar } from "./statusBar";
 import type { Heartbeat } from "./types";
@@ -102,6 +102,7 @@ export class Tracker implements vscode.Disposable {
       }
 
       const workspace = editor ? vscode.workspace.getWorkspaceFolder(editor.document.uri) : undefined;
+      const gitContext = await getGitContext(editor?.document.uri);
       const durationSeconds = Math.max(
         1,
         Math.min(30, Math.round((now - Math.max(intervalStartedAt, activityStartedAt)) / 1000))
@@ -111,11 +112,15 @@ export class Tracker implements vscode.Disposable {
         project_name: (workspace?.name ?? vscode.workspace.workspaceFolders?.[0]?.name ?? "unknown").slice(0, 200),
         language: (editor?.document.languageId ?? "none").slice(0, 50),
         file_type: fileType(editor),
-        branch: await getBranch(editor?.document.uri),
+        branch: gitContext.branch,
         editor: detectEditorDisplayName(),
         timestamp: new Date(now).toISOString(),
         duration_seconds: durationSeconds,
         session_id: this.sessionId,
+        head_sha: gitContext.headSha,
+        repo_fingerprint: gitContext.repoFingerprint,
+        activity_kind: activityKind(editor),
+        changed_file_count: gitContext.changedFileCount,
       };
 
       for (const profile of profiles) this.client.enqueue(heartbeat, profile);
@@ -125,6 +130,17 @@ export class Tracker implements vscode.Disposable {
       this.tickRunning = false;
     }
   }
+}
+
+function activityKind(editor: vscode.TextEditor | undefined): Heartbeat["activity_kind"] {
+  if (!editor) return "other";
+  const filename = path.basename(editor.document.fileName).toLowerCase();
+  const fullPath = editor.document.fileName.toLowerCase();
+  if (/((^|[._-])(test|spec))|(__tests__|\/tests?\/)/.test(fullPath)) return "test";
+  if (editor.document.languageId === "sql" || /migration|schema/.test(filename)) return "schema";
+  if (["markdown", "plaintext", "restructuredtext"].includes(editor.document.languageId)) return "documentation";
+  if (/^(package(-lock)?\.json|tsconfig.*\.json|.*\.(ya?ml|toml|ini|env))$/.test(filename)) return "configuration";
+  return "implementation";
 }
 
 function activeFilePath(): string | null {

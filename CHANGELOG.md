@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- Add privacy-minimized Git HEAD and hashed repository context for exact evidence reconciliation.
+- Add coarse activity category and changed-file count without sending filenames, diffs, prompts, or source.
+
 ## 0.3.2
 
 - Detect existing Claude Code and Codex profiles in `~/.quarryfi/config.json`.

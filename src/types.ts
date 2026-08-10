@@ -19,6 +19,10 @@ export interface Heartbeat {
   timestamp: string;
   duration_seconds: number;
   session_id: string;
+  head_sha?: string;
+  repo_fingerprint?: string;
+  activity_kind?: "implementation" | "test" | "debug" | "schema" | "configuration" | "documentation" | "review" | "other";
+  changed_file_count?: number;
 }
 
 export interface ClientMetadata {
