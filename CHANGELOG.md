@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+- Shows a one-time in-editor update warning when QuarryFi reports that a newer tracker is available or required for evidence matching.
+- Keeps heartbeat delivery backward compatible; update guidance never blocks tracked metadata from being accepted.
+
 ## 0.4.0
 
 - Add privacy-minimized Git HEAD and hashed repository context for exact evidence reconciliation.

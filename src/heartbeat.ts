@@ -7,6 +7,7 @@ import {
 } from "./constants";
 import type { AuditLog } from "./auditLog";
 import type { ClientMetadata, Heartbeat, Profile } from "./types";
+import { parseClientUpdate, type ClientUpdateNotice } from "./clientUpdate";
 
 interface ProfileQueue {
   profile: Profile;
@@ -19,7 +20,9 @@ export class HeartbeatClient implements vscode.Disposable {
   private readonly queues = new Map<string, ProfileQueue>();
   private readonly inFlight = new Map<string, Promise<void>>();
   private readonly stateEmitter: vscode.EventEmitter<DeliveryState>;
+  private readonly updateEmitter: vscode.EventEmitter<ClientUpdateNotice>;
   readonly onDidChangeState: vscode.Event<DeliveryState>;
+  readonly onDidReceiveUpdate: vscode.Event<ClientUpdateNotice>;
   private state: DeliveryState = "idle";
 
   constructor(
@@ -29,7 +32,9 @@ export class HeartbeatClient implements vscode.Disposable {
   ) {
     const vscodeApi = require("vscode") as typeof vscode;
     this.stateEmitter = new vscodeApi.EventEmitter<DeliveryState>();
+    this.updateEmitter = new vscodeApi.EventEmitter<ClientUpdateNotice>();
     this.onDidChangeState = this.stateEmitter.event;
+    this.onDidReceiveUpdate = this.updateEmitter.event;
   }
 
   enqueue(heartbeat: Heartbeat, profile: Profile): void {
@@ -63,6 +68,7 @@ export class HeartbeatClient implements vscode.Disposable {
 
   dispose(): void {
     this.stateEmitter.dispose();
+    this.updateEmitter.dispose();
   }
 
   private async flushProfile(id: string): Promise<void> {
@@ -107,6 +113,9 @@ export class HeartbeatClient implements vscode.Disposable {
       }
 
       entry.items.splice(0, batch.length);
+      const responseBody = await safeJson(response);
+      const update = parseClientUpdate(responseBody);
+      if (update) this.updateEmitter.fire(update);
       this.auditLog.append(batch, entry.profile);
       this.output.appendLine(
         `[QuarryFi] Sent ${batch.length} heartbeat${batch.length === 1 ? "" : "s"} for "${entry.profile.name}".`
@@ -129,6 +138,14 @@ export class HeartbeatClient implements vscode.Disposable {
     if (state === this.state) return;
     this.state = state;
     this.stateEmitter.fire(state);
+  }
+}
+
+async function safeJson(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch {
+    return null;
   }
 }
 

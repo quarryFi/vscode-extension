@@ -37,6 +37,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     statusBar,
     client,
     tracker,
+    client.onDidReceiveUpdate(async (update) => {
+      const noticeKey = `quarryfi.update-notice.${update.latestVersion}`;
+      if (context.globalState.get<boolean>(noticeKey)) return;
+      await context.globalState.update(noticeKey, true);
+      const action = await vscode.window.showWarningMessage(
+        update.updateRequired
+          ? `QuarryFi Tracker v${update.latestVersion} is required for the newest evidence matching.`
+          : `QuarryFi Tracker v${update.latestVersion} is available.`,
+        "Update extension",
+        "Open integrations"
+      );
+      if (action === "Update extension") {
+        await vscode.commands.executeCommand("workbench.extensions.installExtension", "quarryfi.quarryfi-tracker");
+      } else if (action === "Open integrations") {
+        await vscode.env.openExternal(vscode.Uri.parse("https://quarryfi.com/dashboard/team#tracking-plugins"));
+      }
+    }),
     vscode.commands.registerCommand("quarryfi.configure", async () => {
       await manageProfiles(profiles);
       await tracker.updateStatus();

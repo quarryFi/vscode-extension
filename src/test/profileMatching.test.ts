@@ -3,6 +3,7 @@ import test from "node:test";
 import { API_KEY_PATTERN, EXTENSION_SOURCE } from "../constants";
 import { pathMatchesFolder, resolveMatchingProfiles } from "../profileMatching";
 import { maskApiKey, parseSharedConfig } from "../sharedConfig";
+import { parseClientUpdate } from "../clientUpdate";
 import type { Profile } from "../types";
 
 const profiles: Profile[] = [
@@ -24,6 +25,28 @@ const profiles: Profile[] = [
 
 test("only the canonical VS Code source is emitted", () => {
   assert.equal(EXTENSION_SOURCE, "vscode");
+});
+
+test("heartbeat update notices are parsed without trusting malformed responses", () => {
+  assert.equal(parseClientUpdate({ clientUpdates: [] }), null);
+  assert.equal(parseClientUpdate({ clientUpdates: [{ source: "vscode", updateAvailable: true }] }), null);
+  assert.deepEqual(parseClientUpdate({ clientUpdates: [{
+    source: "vscode",
+    currentVersion: "0.3.2",
+    minimumVersion: "0.4.0",
+    latestVersion: "0.4.1",
+    updateUrl: "https://marketplace.visualstudio.com/items?itemName=quarryfi.quarryfi-tracker",
+    updateAvailable: true,
+    updateRequired: true,
+  }] }), {
+    source: "vscode",
+    currentVersion: "0.3.2",
+    minimumVersion: "0.4.0",
+    latestVersion: "0.4.1",
+    updateUrl: "https://marketplace.visualstudio.com/items?itemName=quarryfi.quarryfi-tracker",
+    updateAvailable: true,
+    updateRequired: true,
+  });
 });
 
 test("API keys require the complete QuarryFi format", () => {
