@@ -111,7 +111,7 @@
     "test": "npm run test:unit",
     "check": "npm run typecheck && npm run test",
     "package": "vsce package",
-    "publish:marketplace": "vsce publish"
+    "publish:marketplace": "vsce publish --azure-credential"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

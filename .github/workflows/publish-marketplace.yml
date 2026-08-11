@@ -1,0 +1,166 @@
+name: Publish VS Code Marketplace
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Action to run from main
+        required: true
+        type: choice
+        default: verify-access
+        options:
+          - identity-profile
+          - verify-access
+          - publish
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vscode-marketplace-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Test and publish
+    runs-on: ubuntu-latest
+    environment: vscode-marketplace
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_CORE_OUTPUT: none
+    steps:
+      - name: Check out the release
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Validate release ref and version
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          expected_tag="v${package_version}"
+
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_NAME}" != "${expected_tag}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package version ${package_version}." >&2
+            exit 1
+          fi
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "Manual publishing is allowed only from main." >&2
+            exit 1
+          fi
+
+          echo "version=${package_version}" >> "${GITHUB_OUTPUT}"
+        id: release
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run static checks and unit tests
+        if: github.event_name == 'push' || inputs.mode == 'publish'
+        run: npm run check
+
+      - name: Build extension
+        if: github.event_name == 'push' || inputs.mode == 'publish'
+        run: npm run build
+
+      - name: Run VS Code integration tests
+        if: github.event_name == 'push' || inputs.mode == 'publish'
+        run: xvfb-run -a npm run test:integration
+
+      - name: Package the reviewed VSIX
+        if: github.event_name == 'push' || inputs.mode == 'publish'
+        run: npm run package
+
+      - name: Locate packaged VSIX
+        if: github.event_name == 'push' || inputs.mode == 'publish'
+        id: package
+        shell: bash
+        run: |
+          vsix="quarryfi-tracker-${{ steps.release.outputs.version }}.vsix"
+          test -f "${vsix}"
+          echo "path=${vsix}" >> "${GITHUB_OUTPUT}"
+
+      - name: Sign in to Microsoft Entra with GitHub OIDC
+        uses: Azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca # v3.0.1
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Report Marketplace profile ID
+        id: identity
+        shell: bash
+        run: |
+          profile_id="$(az rest \
+            --method get \
+            --url "https://app.vssps.visualstudio.com/_apis/profile/profiles/me" \
+            --resource "499b84ac-1321-427f-aa17-267ca6975798" \
+            --query id \
+            --output tsv)"
+          test -n "${profile_id}"
+          echo "Microsoft Marketplace profile ID: ${profile_id}"
+          echo "id=${profile_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify Marketplace Contributor access
+        if: github.event_name == 'push' || inputs.mode != 'identity-profile'
+        run: npx vsce verify-pat --azure-credential quarryfi
+
+      - name: Publish reviewed VSIX
+        if: github.event_name == 'push' || inputs.mode == 'publish'
+        run: npm run publish:marketplace -- --packagePath "${{ steps.package.outputs.path }}"
+
+      - name: Verify published version
+        if: github.event_name == 'push' || inputs.mode == 'publish'
+        shell: bash
+        run: |
+          published_version="$(npx vsce show quarryfi.quarryfi-tracker --json | node -e '
+            let input = "";
+            process.stdin.on("data", chunk => input += chunk);
+            process.stdin.on("end", () => {
+              const extension = JSON.parse(input);
+              process.stdout.write(extension.versions[0].version);
+            });
+          ')"
+
+          if [[ "${published_version}" != "${{ steps.release.outputs.version }}" ]]; then
+            echo "Marketplace reports ${published_version}; expected ${{ steps.release.outputs.version }}." >&2
+            exit 1
+          fi
+
+      - name: Preserve the published VSIX
+        if: github.event_name == 'push' || inputs.mode == 'publish'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: quarryfi-tracker-${{ steps.release.outputs.version }}
+          path: ${{ steps.package.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
+
+  github-release:
+    name: Create GitHub release
+    if: github.event_name == 'push'
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download the published VSIX
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: quarryfi-tracker-*
+          merge-multiple: true
+
+      - name: Create matching GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" ./*.vsix --generate-notes --verify-tag

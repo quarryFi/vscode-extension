@@ -93,10 +93,12 @@ Integration tests use the official VS Code `@vscode/test-electron` tooling. Pack
 
 1. Update `version` and `CHANGELOG.md`.
 2. Run `npm ci && npm run check && npm run test:integration && npm run package`.
-3. Upload the generated VSIX in the [Visual Studio Marketplace publisher portal](https://marketplace.visualstudio.com/manage/publishers/) or run `npm run publish:marketplace` with approved publisher credentials.
-4. Create a matching GitHub release and attach the VSIX.
+3. Commit the release and push an annotated `vX.Y.Z` tag that exactly matches `package.json`.
+4. Approve the protected `vscode-marketplace` GitHub environment. The release workflow publishes the reviewed VSIX through Microsoft Entra workload identity federation and creates the matching GitHub release.
 
-Publisher credentials belong in the Marketplace, Microsoft Entra, or a protected CI secret—not in this repository.
+See [Marketplace publishing](docs/marketplace-publishing.md) for the identity model, one-time configuration, release gates, and recovery process. Manual VSIX upload remains available as a recovery path.
+
+The routine release path stores no Marketplace PAT or Entra client secret. Publisher access belongs in Microsoft Entra and the Marketplace publisher account—not in this repository.
 
 ## License
 
