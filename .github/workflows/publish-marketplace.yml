@@ -31,8 +31,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    env:
-      AZURE_CORE_OUTPUT: none
     steps:
       - name: Check out the release
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
