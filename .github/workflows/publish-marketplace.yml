@@ -121,19 +121,33 @@ jobs:
         if: github.event_name == 'push' || inputs.mode == 'publish'
         shell: bash
         run: |
-          published_version="$(npx vsce show quarryfi.quarryfi-tracker --json | node -e '
-            let input = "";
-            process.stdin.on("data", chunk => input += chunk);
-            process.stdin.on("end", () => {
-              const extension = JSON.parse(input);
-              process.stdout.write(extension.versions[0].version);
-            });
-          ')"
+          expected_version="${{ steps.release.outputs.version }}"
 
-          if [[ "${published_version}" != "${{ steps.release.outputs.version }}" ]]; then
-            echo "Marketplace reports ${published_version}; expected ${{ steps.release.outputs.version }}." >&2
-            exit 1
-          fi
+          # Marketplace reads can lag a successful publish by several minutes.
+          # Retry for six minutes before treating the release as missing.
+          for attempt in {1..24}; do
+            published_version="$(npx vsce show quarryfi.quarryfi-tracker --json | node -e '
+              let input = "";
+              process.stdin.on("data", chunk => input += chunk);
+              process.stdin.on("end", () => {
+                const extension = JSON.parse(input);
+                process.stdout.write(extension.versions[0].version);
+              });
+            ')" || published_version="unavailable"
+
+            if [[ "${published_version}" == "${expected_version}" ]]; then
+              echo "Marketplace reports the expected ${expected_version} release."
+              exit 0
+            fi
+
+            echo "Attempt ${attempt}/24: Marketplace reports ${published_version}; expected ${expected_version}."
+            if [[ "${attempt}" -lt 24 ]]; then
+              sleep 15
+            fi
+          done
+
+          echo "Marketplace did not report ${expected_version} within six minutes." >&2
+          exit 1
 
       - name: Preserve the published VSIX
         if: github.event_name == 'push' || inputs.mode == 'publish'
