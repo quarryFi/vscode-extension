@@ -10,7 +10,9 @@ Install **QuarryFi R&D Tracker** from the VS Code Marketplace, or run:
 code --install-extension quarryfi.quarryfi-tracker
 ```
 
-For a compatible VS Code-based editor, use the Marketplace page's **Download Extension** action, then choose **Extensions → … → Install from VSIX…**.
+On first installation, VS Code asks you to confirm that you trust the third-party publisher **QuarryFi**. Review the publisher and extension identifier before continuing.
+
+For a compatible VS Code-based editor, download the Marketplace VSIX, then choose **Extensions → … → Install from VSIX…**. Marketplace installs receive normal extension updates; VS Code disables automatic updates by default for extensions installed manually from a VSIX.
 
 ## Set up tracking
 
@@ -18,6 +20,8 @@ For a compatible VS Code-based editor, use the Marketplace page's **Download Ext
 2. Otherwise, create a seat-assigned key on the [QuarryFi Team dashboard](https://quarryfi.com/dashboard/team). A key is shown only once, so copy it when it is created.
 3. In VS Code, run **QuarryFi: Configure Tracking**, add a profile, paste the key, and select the workspace folders that belong to that QuarryFi account.
 4. Start working. The status bar shows the matched profile and delivery state.
+
+Tracker keys and accepted heartbeats require an active QuarryFi Core subscription. You can create and explore a Free account before upgrading, but Free accounts cannot generate new tracker keys.
 
 Claude Code and Codex keep their shared profile configuration in `~/.quarryfi/config.json`. Import is always user-confirmed, never displays or logs the full key, and copies selected keys into VS Code `SecretStorage`. Manually entered keys are verified against the seat-scoped status endpoint before saving. API keys are never written to VS Code `settings.json`.
 
@@ -64,7 +68,7 @@ Successful deliveries are recorded in `~/.quarryfi/vscode-audit.log`. The log co
 
 API keys, source code, file contents, and full file paths are never logged.
 
-## Upgrading from 0.2.x
+## Upgrading from older releases
 
 On first activation, the extension migrates valid keys from the old plaintext `quarryfi.apiKey` and `quarryfi.profiles` settings into encrypted SecretStorage, preserves their workspace routing, and removes the plaintext settings. Custom API endpoints are intentionally not migrated; released builds send only to QuarryFi's production HTTPS endpoint.
 

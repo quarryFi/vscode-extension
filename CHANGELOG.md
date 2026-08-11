@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2
+
+- Clarify the first-install publisher trust prompt and Marketplace versus manual VSIX update behavior.
+- State that seat-assigned tracker keys and accepted heartbeats require QuarryFi Core.
+- Refresh the Marketplace README for the current customer installation flow.
+
 ## 0.4.1
 
 - Shows a one-time in-editor update warning when QuarryFi reports that a newer tracker is available or required for evidence matching.

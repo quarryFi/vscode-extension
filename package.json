@@ -2,7 +2,7 @@
   "name": "quarryfi-tracker",
   "displayName": "QuarryFi R&D Tracker",
   "description": "Capture active VS Code development time as metadata-only R&D evidence in QuarryFi.",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "publisher": "quarryfi",
   "license": "MIT",
   "engines": {
