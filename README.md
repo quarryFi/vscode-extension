@@ -17,7 +17,7 @@ For a compatible VS Code-based editor, download the Marketplace VSIX, then choos
 ## Set up tracking
 
 1. If Claude Code or Codex is already configured on this machine, accept **Review & import** after installation or run **QuarryFi: Import Existing Claude Code / Codex Profile**. Review the profile and workspace scope before importing it into encrypted VS Code storage.
-2. Otherwise, create a seat-assigned key on the [QuarryFi Team dashboard](https://quarryfi.com/dashboard/team). A key is shown only once, so copy it when it is created.
+2. Otherwise, review the [public QuarryFi VS Code setup guide](https://quarryfi.com/integrations#vscode), then have the QuarryFi account owner create a seat-assigned key from the Team dashboard. A key is shown only once, so copy it when it is created.
 3. In VS Code, run **QuarryFi: Configure Tracking**, add a profile, paste the key, and select the workspace folders that belong to that QuarryFi account.
 4. Start working. The status bar shows the matched profile and delivery state.
 

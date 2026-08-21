@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.3
+
+- Point Marketplace readers to the public VS Code integration guide instead of the private Team dashboard.
+- Set the extension homepage to the stable `integrations#vscode` destination.
+
 ## 0.4.2
 
 - Clarify the first-install publisher trust prompt and Marketplace versus manual VSIX update behavior.

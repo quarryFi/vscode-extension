@@ -2,7 +2,7 @@
   "name": "quarryfi-tracker",
   "displayName": "QuarryFi R&D Tracker",
   "description": "Capture active VS Code development time as metadata-only R&D evidence in QuarryFi.",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "publisher": "quarryfi",
   "license": "MIT",
   "engines": {
@@ -28,7 +28,7 @@
     "type": "git",
     "url": "https://github.com/quarryFi/vscode-extension.git"
   },
-  "homepage": "https://quarryfi.com",
+  "homepage": "https://quarryfi.com/integrations#vscode",
   "bugs": {
     "url": "https://github.com/quarryFi/vscode-extension/issues"
   },
